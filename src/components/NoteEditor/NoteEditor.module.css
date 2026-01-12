@@ -1,0 +1,239 @@
+.editor {
+  background-color: var(--bg-primary);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  height: 100%;
+}
+
+.emptyState {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  padding: var(--spacing-xl);
+  text-align: center;
+}
+
+.emptyState h2 {
+  font-size: var(--font-size-2xl);
+  margin-bottom: var(--spacing-md);
+  color: var(--text-primary);
+}
+
+.emptyState p {
+  font-size: var(--font-size-base);
+  color: var(--text-tertiary);
+}
+
+.header {
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--spacing-md);
+}
+
+.noteInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.noteTitle {
+  font-size: var(--font-size-2xl);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 var(--spacing-xs) 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color var(--transition-fast);
+  border-radius: var(--radius-sm);
+  padding: var(--spacing-xs) 0;
+}
+
+.noteTitle:hover {
+  color: var(--accent);
+}
+
+.titleInput {
+  font-size: var(--font-size-2xl);
+  font-weight: 700;
+  color: var(--text-primary);
+  background-color: var(--bg-secondary);
+  border: 2px solid var(--accent);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-sm);
+  margin: 0 0 var(--spacing-xs) 0;
+  width: 100%;
+  outline: none;
+  font-family: var(--font-family);
+}
+
+.noteDate {
+  font-size: var(--font-size-sm);
+  color: var(--text-tertiary);
+  margin: 0;
+}
+
+.savingIndicator {
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.actions {
+  display: flex;
+  gap: var(--spacing-sm);
+  flex-shrink: 0;
+}
+
+.actionBtn {
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  font-size: 16px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.actionBtn:hover {
+  background-color: var(--bg-hover);
+}
+
+.actionBtn.pinned {
+  background-color: var(--accent);
+  border-color: var(--accent);
+}
+
+.deleteBtn {
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  font-size: 16px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.deleteBtn:hover {
+  background-color: var(--accent-red);
+  border-color: var(--accent-red);
+  transform: scale(1.05);
+}
+
+.aiBtn {
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background-color: var(--accent-purple);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.aiBtn:hover {
+  background-color: var(--accent-blue);
+}
+
+.editorContent {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Quill editor styling */
+.quill {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Override Quill default styles for dark theme */
+:global(.ql-toolbar.ql-snow) {
+  border: 1px solid var(--border-color) !important;
+  background-color: var(--bg-secondary) !important;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+
+:global(.ql-container.ql-snow) {
+  border: 1px solid var(--border-color) !important;
+  border-top: none !important;
+  background-color: var(--bg-secondary) !important;
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  font-size: var(--font-size-base);
+  flex: 1;
+}
+
+:global(.ql-editor) {
+  color: var(--text-primary) !important;
+  min-height: 300px;
+  padding: var(--spacing-lg) !important;
+}
+
+:global(.ql-editor.ql-blank::before) {
+  color: var(--text-tertiary) !important;
+  font-style: italic;
+}
+
+/* Toolbar button colors */
+:global(.ql-snow .ql-stroke) {
+  stroke: var(--text-secondary) !important;
+}
+
+:global(.ql-snow .ql-fill) {
+  fill: var(--text-secondary) !important;
+}
+
+:global(.ql-snow .ql-picker-label) {
+  color: var(--text-secondary) !important;
+}
+
+:global(.ql-toolbar.ql-snow .ql-picker-label:hover),
+:global(.ql-toolbar.ql-snow button:hover),
+:global(.ql-toolbar.ql-snow button:focus) {
+  color: var(--text-primary) !important;
+}
+
+:global(.ql-toolbar.ql-snow button:hover .ql-stroke),
+:global(.ql-toolbar.ql-snow button:focus .ql-stroke) {
+  stroke: var(--accent) !important;
+}
+
+:global(.ql-toolbar.ql-snow button:hover .ql-fill),
+:global(.ql-toolbar.ql-snow button:focus .ql-fill) {
+  fill: var(--accent) !important;
+}
+
+:global(.ql-snow.ql-toolbar button.ql-active),
+:global(.ql-snow .ql-toolbar button.ql-active) {
+  color: var(--accent) !important;
+}
+
+:global(.ql-snow.ql-toolbar button.ql-active .ql-stroke),
+:global(.ql-snow .ql-toolbar button.ql-active .ql-stroke) {
+  stroke: var(--accent) !important;
+}
+
+:global(.ql-snow.ql-toolbar button.ql-active .ql-fill),
+:global(.ql-snow .ql-toolbar button.ql-active .ql-fill) {
+  fill: var(--accent) !important;
+}
+
+/* Dropdown menus */
+:global(.ql-snow .ql-picker-options) {
+  background-color: var(--bg-secondary) !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+:global(.ql-snow .ql-picker-item:hover) {
+  color: var(--accent) !important;
+}
