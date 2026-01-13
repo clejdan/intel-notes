@@ -41,6 +41,7 @@
   gap: var(--spacing-sm);
 }
 
+.settingsBtn,
 .clearBtn,
 .closeBtn {
   padding: var(--spacing-xs) var(--spacing-sm);
@@ -53,10 +54,123 @@
   font-size: 16px;
 }
 
+.settingsBtn:hover,
 .clearBtn:hover,
 .closeBtn:hover {
   background-color: var(--bg-hover);
   transform: scale(1.05);
+}
+
+/* Settings Modal */
+.settingsModal {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: var(--spacing-xl);
+}
+
+.modalContent {
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-xl);
+  max-width: 500px;
+  width: 100%;
+  box-shadow: var(--shadow-lg);
+}
+
+.modalContent h4 {
+  margin: 0 0 var(--spacing-sm) 0;
+  font-size: var(--font-size-xl);
+  color: var(--text-primary);
+}
+
+.modalDescription {
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-lg);
+  font-size: var(--font-size-sm);
+}
+
+.inputGroup {
+  margin-bottom: var(--spacing-lg);
+}
+
+.inputGroup label {
+  display: block;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-sm);
+}
+
+.apiKeyInput {
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  font-family: var(--font-mono);
+}
+
+.apiKeyInput:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.hint {
+  margin-top: var(--spacing-sm);
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+}
+
+.cancelBtn,
+.saveBtn {
+  padding: var(--spacing-sm) var(--spacing-lg);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.cancelBtn {
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+}
+
+.cancelBtn:hover {
+  background-color: var(--bg-hover);
+}
+
+.saveBtn {
+  background-color: var(--accent);
+  border: none;
+  color: white;
+}
+
+.saveBtn:hover:not(:disabled) {
+  background-color: var(--accent-purple);
+}
+
+.saveBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .statusBar {

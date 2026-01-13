@@ -17,11 +17,20 @@ export function AIProvider({ children }) {
     aiReady: false,
     loading: false,
   })
+  const [aiProvider, setAiProvider] = useState('openai')
+  const [hasApiKey, setHasApiKey] = useState(false)
+  const [showSettings, setShowSettings] = useState(false)
   const [embeddingStats, setEmbeddingStats] = useState({
     totalNotes: 0,
     embeddedNotes: 0,
     missingEmbeddings: 0,
   })
+
+  // Load API key on mount
+  useEffect(() => {
+    const hasKey = aiService.loadOpenAIKey()
+    setHasApiKey(hasKey)
+  }, [])
 
   // Update embedding stats when notes change
   useEffect(() => {
@@ -51,10 +60,17 @@ export function AIProvider({ children }) {
         await updateEmbeddingStats()
       }
 
-      // Initialize AI model
-      setLoadingMessage('Loading AI model...')
-      await aiService.initAIModel()
-      setModelStatus(prev => ({ ...prev, aiReady: true }))
+      // Initialize AI model (only if using local AI or if using OpenAI and have key)
+      if (aiProvider === 'local' || (aiProvider === 'openai' && hasApiKey)) {
+        setLoadingMessage('Loading AI model...')
+        if (aiProvider === 'local') {
+          await aiService.initLocalAIModel()
+        }
+        setModelStatus(prev => ({ ...prev, aiReady: true }))
+      } else if (aiProvider === 'openai' && !hasApiKey) {
+        setModelStatus(prev => ({ ...prev, aiReady: false }))
+        setLoadingMessage('OpenAI API key required')
+      }
 
       setLoadingMessage('')
       console.log('AI initialized successfully!')
@@ -143,6 +159,26 @@ export function AIProvider({ children }) {
     }
   }
 
+  // Save OpenAI API key
+  function saveApiKey(key) {
+    aiService.setOpenAIKey(key)
+    setHasApiKey(!!key)
+    // Re-initialize if needed
+    if (key && modelStatus.loading === false) {
+      initializeAI()
+    }
+  }
+
+  // Change AI provider
+  function changeProvider(provider) {
+    aiService.setAIProvider(provider)
+    setAiProvider(provider)
+    // Re-initialize with new provider
+    if (modelStatus.loading === false) {
+      initializeAI()
+    }
+  }
+
   const value = {
     isAIChatOpen,
     toggleAIChat,
@@ -155,6 +191,12 @@ export function AIProvider({ children }) {
     embeddingStats,
     initializeAI,
     embedNote,
+    saveApiKey,
+    changeProvider,
+    aiProvider,
+    hasApiKey,
+    showSettings,
+    setShowSettings,
   }
 
   return <AIContext.Provider value={value}>{children}</AIContext.Provider>

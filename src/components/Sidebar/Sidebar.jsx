@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import { useFolders } from '../../context/FoldersContext'
 import { useNotes } from '../../context/NotesContext'
+import { useAI } from '../../context/AIContext'
 import styles from './Sidebar.module.css'
 
 function Sidebar() {
   const { folders, selectedFolder, setSelectedFolder, createFolder, renameFolder, deleteFolder } = useFolders()
   const { createNote } = useNotes()
+  const { toggleAIChat } = useAI()
   const [isCreatingFolder, setIsCreatingFolder] = useState(false)
   const [newFolderName, setNewFolderName] = useState('')
   const [editingFolderId, setEditingFolderId] = useState(null)
@@ -81,13 +83,22 @@ function Sidebar() {
     <aside className={styles.sidebar}>
       <div className={styles.header}>
         <h2 className={styles.title}>IntelNotes</h2>
-        <button
-          className={styles.newFolderBtn}
-          onClick={handleNewFolder}
-          title="New Folder"
-        >
-          +
-        </button>
+        <div className={styles.headerActions}>
+          <button
+            className={styles.aiChatBtn}
+            onClick={toggleAIChat}
+            title="AI Chat"
+          >
+            🤖
+          </button>
+          <button
+            className={styles.newFolderBtn}
+            onClick={handleNewFolder}
+            title="New Folder"
+          >
+            +
+          </button>
+        </div>
       </div>
 
       <div className={styles.content}>

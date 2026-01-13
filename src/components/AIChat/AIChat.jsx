@@ -13,9 +13,14 @@ function AIChat() {
     loadingMessage,
     modelStatus,
     embeddingStats,
+    saveApiKey,
+    hasApiKey,
+    showSettings,
+    setShowSettings,
   } = useAI()
 
   const [inputValue, setInputValue] = useState('')
+  const [apiKeyInput, setApiKeyInput] = useState('')
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
 
@@ -39,6 +44,14 @@ function AIChat() {
     }
   }
 
+  const handleSaveApiKey = () => {
+    if (apiKeyInput.trim()) {
+      saveApiKey(apiKeyInput.trim())
+      setApiKeyInput('')
+      setShowSettings(false)
+    }
+  }
+
   if (!isAIChatOpen) {
     return null
   }
@@ -53,6 +66,13 @@ function AIChat() {
           </span>
         </div>
         <div className={styles.headerActions}>
+          <button
+            onClick={() => setShowSettings(true)}
+            className={styles.settingsBtn}
+            title="Settings"
+          >
+            ⚙️
+          </button>
           {messages.length > 0 && (
             <button
               onClick={clearChat}
@@ -71,6 +91,51 @@ function AIChat() {
           </button>
         </div>
       </div>
+
+      {/* Settings Modal */}
+      {showSettings && (
+        <div className={styles.settingsModal}>
+          <div className={styles.modalContent}>
+            <h4>OpenAI Settings</h4>
+            <p className={styles.modalDescription}>
+              Enter your OpenAI API key to use GPT-3.5/4 for better responses.
+            </p>
+            <div className={styles.inputGroup}>
+              <label htmlFor="apiKey">API Key</label>
+              <input
+                id="apiKey"
+                type="password"
+                value={apiKeyInput}
+                onChange={(e) => setApiKeyInput(e.target.value)}
+                placeholder="sk-..."
+                className={styles.apiKeyInput}
+                autoFocus
+              />
+              <p className={styles.hint}>
+                {hasApiKey ? '✓ API key is set' : 'Get your key from platform.openai.com'}
+              </p>
+            </div>
+            <div className={styles.modalActions}>
+              <button
+                onClick={() => {
+                  setShowSettings(false)
+                  setApiKeyInput('')
+                }}
+                className={styles.cancelBtn}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveApiKey}
+                className={styles.saveBtn}
+                disabled={!apiKeyInput.trim()}
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Status indicator */}
       {modelStatus.loading && (
