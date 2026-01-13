@@ -1,8 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import { useNotes } from './NotesContext'
 import * as aiService from '../services/aiService'
-import * as embeddingService from '../services/embeddingService'
-import { getEmbeddingStats } from '../services/ragService'
 
 const AIContext = createContext()
 
@@ -13,70 +11,41 @@ export function AIProvider({ children }) {
   const [isLoading, setIsLoading] = useState(false)
   const [loadingMessage, setLoadingMessage] = useState('')
   const [modelStatus, setModelStatus] = useState({
-    embeddingReady: false,
+    embeddingReady: true, // Using keyword search, no embeddings needed
     aiReady: false,
     loading: false,
   })
   const [aiProvider, setAiProvider] = useState('openai')
   const [hasApiKey, setHasApiKey] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
-  const [embeddingStats, setEmbeddingStats] = useState({
-    totalNotes: 0,
-    embeddedNotes: 0,
-    missingEmbeddings: 0,
-  })
 
   // Load API key on mount
   useEffect(() => {
     const hasKey = aiService.loadOpenAIKey()
     setHasApiKey(hasKey)
+    if (hasKey) {
+      setModelStatus(prev => ({ ...prev, aiReady: true }))
+    }
   }, [])
 
-  // Update embedding stats when notes change
-  useEffect(() => {
-    updateEmbeddingStats()
-  }, [notes])
-
-  // Update embedding statistics
-  async function updateEmbeddingStats() {
-    const stats = await getEmbeddingStats()
-    setEmbeddingStats(stats)
-  }
-
-  // Initialize AI models
+  // Initialize AI (for OpenAI, just check if key exists)
   async function initializeAI() {
     try {
       setModelStatus(prev => ({ ...prev, loading: true }))
-      setLoadingMessage('Initializing AI models...')
+      setLoadingMessage('Initializing AI...')
 
-      // Initialize embedding model first
-      await embeddingService.initEmbeddingModel()
-      setModelStatus(prev => ({ ...prev, embeddingReady: true }))
-
-      // Embed any missing notes
-      if (embeddingStats.missingEmbeddings > 0) {
-        setLoadingMessage(`Embedding ${embeddingStats.missingEmbeddings} notes...`)
-        await embeddingService.embedMissingNotes(notes)
-        await updateEmbeddingStats()
-      }
-
-      // Initialize AI model (only if using local AI or if using OpenAI and have key)
-      if (aiProvider === 'local' || (aiProvider === 'openai' && hasApiKey)) {
-        setLoadingMessage('Loading AI model...')
-        if (aiProvider === 'local') {
-          await aiService.initLocalAIModel()
-        }
+      // For OpenAI, we just need the API key
+      if (aiProvider === 'openai' && hasApiKey) {
         setModelStatus(prev => ({ ...prev, aiReady: true }))
+        setLoadingMessage('')
+        console.log('AI initialized successfully!')
       } else if (aiProvider === 'openai' && !hasApiKey) {
         setModelStatus(prev => ({ ...prev, aiReady: false }))
-        setLoadingMessage('OpenAI API key required')
+        setLoadingMessage('OpenAI API key required. Click settings to add your key.')
       }
-
-      setLoadingMessage('')
-      console.log('AI initialized successfully!')
     } catch (error) {
       console.error('Error initializing AI:', error)
-      setLoadingMessage('Error loading AI. Please refresh and try again.')
+      setLoadingMessage('Error initializing AI.')
     } finally {
       setModelStatus(prev => ({ ...prev, loading: false }))
     }
@@ -100,8 +69,8 @@ export function AIProvider({ children }) {
     setLoadingMessage('Thinking...')
 
     try {
-      // Get AI response with RAG
-      const result = await aiService.answerQuestion(userMessage, (msg, progress) => {
+      // Get AI response with RAG (using keyword search)
+      const result = await aiService.answerQuestion(userMessage, (msg) => {
         setLoadingMessage(msg)
       })
 
@@ -117,11 +86,13 @@ export function AIProvider({ children }) {
     } catch (error) {
       console.error('Error getting AI response:', error)
 
-      // Add error message
+      // Add error message with more detail
       const errorMsg = {
         id: Date.now() + 1,
         role: 'assistant',
-        content: 'Sorry, I encountered an error while processing your question. Please try again.',
+        content: hasApiKey
+          ? 'Sorry, I encountered an error. Please check your API key and try again.'
+          : 'Please add your OpenAI API key in settings to use the AI chat.',
         timestamp: Date.now(),
         isError: true,
       }
@@ -147,25 +118,12 @@ export function AIProvider({ children }) {
     }
   }
 
-  // Embed a specific note
-  async function embedNote(note) {
-    try {
-      await embeddingService.embedNote(note)
-      await updateEmbeddingStats()
-      return true
-    } catch (error) {
-      console.error('Error embedding note:', error)
-      return false
-    }
-  }
-
   // Save OpenAI API key
   function saveApiKey(key) {
     aiService.setOpenAIKey(key)
     setHasApiKey(!!key)
-    // Re-initialize if needed
-    if (key && modelStatus.loading === false) {
-      initializeAI()
+    if (key) {
+      setModelStatus(prev => ({ ...prev, aiReady: true }))
     }
   }
 
@@ -173,10 +131,6 @@ export function AIProvider({ children }) {
   function changeProvider(provider) {
     aiService.setAIProvider(provider)
     setAiProvider(provider)
-    // Re-initialize with new provider
-    if (modelStatus.loading === false) {
-      initializeAI()
-    }
   }
 
   const value = {
@@ -188,9 +142,9 @@ export function AIProvider({ children }) {
     isLoading,
     loadingMessage,
     modelStatus,
-    embeddingStats,
+    embeddingStats: { totalNotes: notes.length, embeddedNotes: 0, missingEmbeddings: 0 },
     initializeAI,
-    embedNote,
+    embedNote: async () => true, // No-op since we use keyword search
     saveApiKey,
     changeProvider,
     aiProvider,

@@ -1,4 +1,3 @@
-import { pipeline } from '@xenova/transformers'
 import db from './db'
 import { stripHtml } from '../utils/textUtils'
 
@@ -6,7 +5,7 @@ import { stripHtml } from '../utils/textUtils'
 let embeddingPipeline = null
 let isInitializing = false
 
-// Initialize the embedding model
+// Initialize the embedding model using dynamic import
 export async function initEmbeddingModel() {
   if (embeddingPipeline) {
     return embeddingPipeline
@@ -24,12 +23,26 @@ export async function initEmbeddingModel() {
     isInitializing = true
     console.log('Loading embedding model...')
 
+    // Dynamic import to avoid loading ONNX runtime at startup
+    const { pipeline, env } = await import('@xenova/transformers')
+
+    // Configure for browser environment
+    env.allowLocalModels = false
+    env.useBrowserCache = true
+
     // Use a small, efficient model for embeddings
     // all-MiniLM-L6-v2 is a good balance of size and quality
     embeddingPipeline = await pipeline(
       'feature-extraction',
       'Xenova/all-MiniLM-L6-v2',
-      { quantized: true }
+      {
+        quantized: true,
+        progress_callback: (progress) => {
+          if (progress.status === 'progress') {
+            console.log(`Loading model: ${Math.round(progress.progress)}%`)
+          }
+        }
+      }
     )
 
     console.log('Embedding model loaded successfully!')

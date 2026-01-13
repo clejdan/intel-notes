@@ -1,4 +1,3 @@
-import { pipeline } from '@xenova/transformers'
 import { queryWithRAG } from './ragService'
 
 // AI Provider types
@@ -60,7 +59,7 @@ export function hasOpenAIKey() {
   return !!openaiApiKey
 }
 
-// Initialize the local AI model
+// Initialize the local AI model using dynamic import
 export async function initLocalAIModel() {
   if (textGenerationPipeline) {
     return textGenerationPipeline
@@ -77,6 +76,13 @@ export async function initLocalAIModel() {
   try {
     isInitializing = true
     console.log('Loading local AI model... This may take a minute on first load.')
+
+    // Dynamic import to avoid loading ONNX runtime at startup
+    const { pipeline, env } = await import('@xenova/transformers')
+
+    // Configure for browser environment
+    env.allowLocalModels = false
+    env.useBrowserCache = true
 
     // Use a small text generation model
     textGenerationPipeline = await pipeline(
@@ -195,17 +201,23 @@ export async function answerQuestion(question, onProgress) {
     // Get RAG context
     const ragResult = await queryWithRAG(question)
 
-    if (ragResult.relevantNotes.length === 0) {
+    // Check if we have an OpenAI key or need to use local AI
+    const useOpenAI = currentProvider === AI_PROVIDERS.OPENAI && hasOpenAIKey()
+
+    // If no notes found, return a helpful message without calling AI
+    if (ragResult.noNotesFound || ragResult.relevantNotes.length === 0) {
+      if (onProgress) onProgress('Complete!', 1.0)
       return {
-        answer: "I couldn't find any relevant notes to answer your question. Try adding more notes or rephrasing your question.",
+        answer: "I don't have any notes to search through yet. Try creating some notes first, then ask me questions about them!",
         relevantNotes: [],
-        question: ragResult.question,
+        question: question,
         context: '',
+        provider: useOpenAI ? 'OpenAI' : 'Local',
       }
     }
 
     if (onProgress) {
-      const provider = currentProvider === AI_PROVIDERS.OPENAI && hasOpenAIKey() ? 'OpenAI' : 'Local AI'
+      const provider = useOpenAI ? 'OpenAI' : 'Local AI'
       onProgress(`Generating answer with ${provider}...`, 0.5)
     }
 
@@ -222,7 +234,7 @@ export async function answerQuestion(question, onProgress) {
       relevantNotes: ragResult.relevantNotes,
       question: ragResult.question,
       context: ragResult.context,
-      provider: currentProvider === AI_PROVIDERS.OPENAI && hasOpenAIKey() ? 'OpenAI' : 'Local',
+      provider: useOpenAI ? 'OpenAI' : 'Local',
     }
   } catch (error) {
     console.error('Error answering question:', error)

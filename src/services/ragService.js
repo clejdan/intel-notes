@@ -1,51 +1,64 @@
-import { generateEmbedding, getAllEmbeddings } from './embeddingService'
 import { getAllNotes } from './noteService'
-import { cosineSimilarity } from '../utils/vectorMath'
 import { stripHtml, truncate } from '../utils/textUtils'
-import { APP_CONFIG } from '../constants/config'
 
-// Find relevant notes for a query using embeddings
-export async function findRelevantNotes(query, maxResults = APP_CONFIG.maxContextNotes) {
+// Simple keyword-based search for finding relevant notes
+// This is a fallback that works without embeddings
+export async function findRelevantNotes(query, maxResults = 5) {
   try {
-    // Generate embedding for the query
-    const queryEmbedding = await generateEmbedding(query)
-
-    if (!queryEmbedding) {
-      console.warn('Could not generate embedding for query')
-      return []
-    }
-
-    // Get all note embeddings
-    const embeddings = await getAllEmbeddings()
-
-    if (embeddings.length === 0) {
-      console.warn('No note embeddings found')
-      return []
-    }
-
-    // Get all notes
     const notes = await getAllNotes()
-    const noteMap = new Map(notes.map(note => [note.id, note]))
 
-    // Calculate similarity scores
-    const similarities = embeddings.map(emb => {
-      const note = noteMap.get(emb.noteId)
-      if (!note) return null
+    if (notes.length === 0) {
+      return []
+    }
 
-      const similarity = cosineSimilarity(queryEmbedding, emb.vector)
+    // Tokenize query into keywords
+    const keywords = query.toLowerCase()
+      .split(/\s+/)
+      .filter(word => word.length > 2) // Ignore very short words
+
+    // Score each note based on keyword matches
+    const scoredNotes = notes.map(note => {
+      const title = (note.title || '').toLowerCase()
+      const content = stripHtml(note.content || '').toLowerCase()
+
+      let score = 0
+
+      // Count keyword matches
+      keywords.forEach(keyword => {
+        // Title matches are worth more
+        const titleMatches = (title.match(new RegExp(keyword, 'gi')) || []).length
+        const contentMatches = (content.match(new RegExp(keyword, 'gi')) || []).length
+
+        score += titleMatches * 3 // Title matches worth 3x
+        score += contentMatches
+      })
+
+      // Normalize by keyword count to avoid bias toward longer queries
+      const normalizedScore = keywords.length > 0 ? score / keywords.length : 0
 
       return {
         note,
-        score: similarity,
-        noteId: emb.noteId,
+        score: normalizedScore,
+        noteId: note.id,
       }
-    }).filter(Boolean) // Remove null entries
+    })
 
-    // Sort by similarity (descending)
-    similarities.sort((a, b) => b.score - a.score)
+    // Filter out notes with no matches and sort by score
+    const relevantNotes = scoredNotes
+      .filter(item => item.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, maxResults)
 
-    // Return top results
-    return similarities.slice(0, maxResults)
+    // If no keyword matches, return most recent notes as context
+    if (relevantNotes.length === 0 && notes.length > 0) {
+      return notes.slice(0, maxResults).map(note => ({
+        note,
+        score: 0.5, // Default score for recent notes
+        noteId: note.id,
+      }))
+    }
+
+    return relevantNotes
   } catch (error) {
     console.error('Error finding relevant notes:', error)
     return []
@@ -92,10 +105,17 @@ export async function queryWithRAG(question) {
     const relevantNotes = await findRelevantNotes(question)
 
     if (relevantNotes.length === 0) {
+      // Return a structure that indicates no notes found, but still allows AI to respond
+      const defaultPrompt = `The user asked: "${question}"
+
+There are no notes in the system yet, or no relevant notes were found. Please respond helpfully and suggest that the user add some notes first.`
+
       return {
-        answer: "I couldn't find any relevant notes to answer your question. Try adding more notes or rephrasing your question.",
-        relevantNotes: [],
+        prompt: defaultPrompt,
         context: '',
+        relevantNotes: [],
+        question,
+        noNotesFound: true,
       }
     }
 
@@ -117,22 +137,9 @@ export async function queryWithRAG(question) {
   }
 }
 
-// Get statistics about embeddings
-export async function getEmbeddingStats() {
-  const embeddings = await getAllEmbeddings()
-  const notes = await getAllNotes()
-
-  return {
-    totalNotes: notes.length,
-    embeddedNotes: embeddings.length,
-    missingEmbeddings: notes.length - embeddings.length,
-  }
-}
-
 export default {
   findRelevantNotes,
   buildContext,
   createRAGPrompt,
   queryWithRAG,
-  getEmbeddingStats,
 }
