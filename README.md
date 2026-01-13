@@ -8,9 +8,9 @@ https://intel-notes.vercel.app
 
 ## What it does
 
-**Notes** - Rich text editor with auto-save. Organize into folders, pin important ones, search across everything.
+**Notes** - Text editor with auto-save. Organize into folders, pin important ones, search across everything.
 
-**AI Chat** - Click the robot icon to chat. The AI searches your notes for relevant context and answers questions about them. Currently uses OpenAI (bring your own API key).
+**AI Chat** - Click the AI Chat icon to chat. The AI searches your notes for relevant context and answers questions about them. Currently uses OpenAI (bring your own API key).
 
 ## Keyboard shortcuts
 
