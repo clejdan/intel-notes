@@ -71,7 +71,7 @@ function AIChat() {
             className={styles.settingsBtn}
             title="Settings"
           >
-            ⚙️
+            ⚙
           </button>
           {messages.length > 0 && (
             <button
