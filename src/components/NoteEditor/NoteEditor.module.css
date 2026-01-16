@@ -142,6 +142,66 @@
   background-color: var(--accent-blue);
 }
 
+.aiBtnActive {
+  background-color: var(--accent-blue);
+}
+
+/* Toolbar styles */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background-color: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  flex-wrap: wrap;
+}
+
+.toolbarGroup {
+  display: flex;
+  gap: 2px;
+}
+
+.toolbarDivider {
+  width: 1px;
+  height: 24px;
+  background-color: var(--border-color);
+  margin: 0 var(--spacing-sm);
+}
+
+.toolbarBtn {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background-color: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  min-width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toolbarBtn:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.toolbarBtnActive {
+  background-color: var(--accent);
+  color: white;
+}
+
+.toolbarBtnActive:hover {
+  background-color: var(--accent-purple);
+  color: white;
+}
+
+/* Editor content area */
 .editorContent {
   flex: 1;
   overflow-y: auto;
@@ -150,90 +210,102 @@
   flex-direction: column;
 }
 
-/* Quill editor styling */
-.quill {
+/* TipTap editor styling */
+.tiptap {
   flex: 1;
-  display: flex;
-  flex-direction: column;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  overflow: hidden;
 }
 
-/* Override Quill default styles for dark theme */
-:global(.ql-toolbar.ql-snow) {
-  border: 1px solid var(--border-color) !important;
-  background-color: var(--bg-secondary) !important;
-  border-radius: var(--radius-md) var(--radius-md) 0 0;
-}
-
-:global(.ql-container.ql-snow) {
-  border: 1px solid var(--border-color) !important;
-  border-top: none !important;
-  background-color: var(--bg-secondary) !important;
-  border-radius: 0 0 var(--radius-md) var(--radius-md);
-  font-size: var(--font-size-base);
-  flex: 1;
-}
-
-:global(.ql-editor) {
-  color: var(--text-primary) !important;
+.tiptap :global(.ProseMirror) {
+  padding: var(--spacing-lg);
   min-height: 300px;
-  padding: var(--spacing-lg) !important;
+  outline: none;
+  color: var(--text-primary);
+  font-size: var(--font-size-base);
+  line-height: 1.6;
 }
 
-:global(.ql-editor.ql-blank::before) {
-  color: var(--text-tertiary) !important;
+.tiptap :global(.ProseMirror p.is-editor-empty:first-child::before) {
+  content: attr(data-placeholder);
+  color: var(--text-tertiary);
+  font-style: italic;
+  pointer-events: none;
+  float: left;
+  height: 0;
+}
+
+/* Typography styles */
+.tiptap :global(.ProseMirror h1) {
+  font-size: 2em;
+  font-weight: 700;
+  margin: 1em 0 0.5em;
+  color: var(--text-primary);
+}
+
+.tiptap :global(.ProseMirror h2) {
+  font-size: 1.5em;
+  font-weight: 600;
+  margin: 1em 0 0.5em;
+  color: var(--text-primary);
+}
+
+.tiptap :global(.ProseMirror h3) {
+  font-size: 1.25em;
+  font-weight: 600;
+  margin: 1em 0 0.5em;
+  color: var(--text-primary);
+}
+
+.tiptap :global(.ProseMirror p) {
+  margin: 0.5em 0;
+}
+
+.tiptap :global(.ProseMirror ul),
+.tiptap :global(.ProseMirror ol) {
+  padding-left: 1.5em;
+  margin: 0.5em 0;
+}
+
+.tiptap :global(.ProseMirror li) {
+  margin: 0.25em 0;
+}
+
+.tiptap :global(.ProseMirror blockquote) {
+  border-left: 3px solid var(--accent);
+  padding-left: var(--spacing-md);
+  margin: 1em 0;
+  color: var(--text-secondary);
   font-style: italic;
 }
 
-/* Toolbar button colors */
-:global(.ql-snow .ql-stroke) {
-  stroke: var(--text-secondary) !important;
+.tiptap :global(.ProseMirror pre) {
+  background-color: var(--bg-primary);
+  border-radius: var(--radius-sm);
+  padding: var(--spacing-md);
+  margin: 1em 0;
+  overflow-x: auto;
 }
 
-:global(.ql-snow .ql-fill) {
-  fill: var(--text-secondary) !important;
+.tiptap :global(.ProseMirror code) {
+  font-family: 'SF Mono', 'Menlo', 'Monaco', monospace;
+  font-size: 0.9em;
+  color: var(--accent-purple);
 }
 
-:global(.ql-snow .ql-picker-label) {
-  color: var(--text-secondary) !important;
+.tiptap :global(.ProseMirror pre code) {
+  color: var(--text-primary);
+  background: none;
+  padding: 0;
 }
 
-:global(.ql-toolbar.ql-snow .ql-picker-label:hover),
-:global(.ql-toolbar.ql-snow button:hover),
-:global(.ql-toolbar.ql-snow button:focus) {
-  color: var(--text-primary) !important;
+.tiptap :global(.ProseMirror a) {
+  color: var(--accent);
+  text-decoration: underline;
 }
 
-:global(.ql-toolbar.ql-snow button:hover .ql-stroke),
-:global(.ql-toolbar.ql-snow button:focus .ql-stroke) {
-  stroke: var(--accent) !important;
-}
-
-:global(.ql-toolbar.ql-snow button:hover .ql-fill),
-:global(.ql-toolbar.ql-snow button:focus .ql-fill) {
-  fill: var(--accent) !important;
-}
-
-:global(.ql-snow.ql-toolbar button.ql-active),
-:global(.ql-snow .ql-toolbar button.ql-active) {
-  color: var(--accent) !important;
-}
-
-:global(.ql-snow.ql-toolbar button.ql-active .ql-stroke),
-:global(.ql-snow .ql-toolbar button.ql-active .ql-stroke) {
-  stroke: var(--accent) !important;
-}
-
-:global(.ql-snow.ql-toolbar button.ql-active .ql-fill),
-:global(.ql-snow .ql-toolbar button.ql-active .ql-fill) {
-  fill: var(--accent) !important;
-}
-
-/* Dropdown menus */
-:global(.ql-snow .ql-picker-options) {
-  background-color: var(--bg-secondary) !important;
-  border: 1px solid var(--border-color) !important;
-}
-
-:global(.ql-snow .ql-picker-item:hover) {
-  color: var(--accent) !important;
+.tiptap :global(.ProseMirror strong) {
+  font-weight: 600;
 }

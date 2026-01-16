@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
-import ReactQuill from 'react-quill'
-import 'react-quill/dist/quill.snow.css'
+import { useEditor, EditorContent } from '@tiptap/react'
+import StarterKit from '@tiptap/starter-kit'
+import Placeholder from '@tiptap/extension-placeholder'
+import Underline from '@tiptap/extension-underline'
 import { useNotes } from '../../context/NotesContext'
 import { useAI } from '../../context/AIContext'
 import { formatFullDate } from '../../utils/dateFormat'
@@ -8,40 +10,136 @@ import { debounce } from '../../utils/debounce'
 import { APP_CONFIG } from '../../constants/config'
 import styles from './NoteEditor.module.css'
 
+// Toolbar button component
+function ToolbarButton({ onClick, isActive, title, children }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`${styles.toolbarBtn} ${isActive ? styles.toolbarBtnActive : ''}`}
+      title={title}
+    >
+      {children}
+    </button>
+  )
+}
+
+// Editor toolbar component
+function EditorToolbar({ editor }) {
+  if (!editor) return null
+
+  return (
+    <div className={styles.toolbar}>
+      <div className={styles.toolbarGroup}>
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+          isActive={editor.isActive('heading', { level: 1 })}
+          title="Heading 1"
+        >
+          H1
+        </ToolbarButton>
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+          isActive={editor.isActive('heading', { level: 2 })}
+          title="Heading 2"
+        >
+          H2
+        </ToolbarButton>
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+          isActive={editor.isActive('heading', { level: 3 })}
+          title="Heading 3"
+        >
+          H3
+        </ToolbarButton>
+      </div>
+
+      <div className={styles.toolbarDivider} />
+
+      <div className={styles.toolbarGroup}>
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleBold().run()}
+          isActive={editor.isActive('bold')}
+          title="Bold"
+        >
+          <strong>B</strong>
+        </ToolbarButton>
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleItalic().run()}
+          isActive={editor.isActive('italic')}
+          title="Italic"
+        >
+          <em>I</em>
+        </ToolbarButton>
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleUnderline().run()}
+          isActive={editor.isActive('underline')}
+          title="Underline"
+        >
+          <u>U</u>
+        </ToolbarButton>
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleStrike().run()}
+          isActive={editor.isActive('strike')}
+          title="Strikethrough"
+        >
+          <s>S</s>
+        </ToolbarButton>
+      </div>
+
+      <div className={styles.toolbarDivider} />
+
+      <div className={styles.toolbarGroup}>
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleBulletList().run()}
+          isActive={editor.isActive('bulletList')}
+          title="Bullet List"
+        >
+          •
+        </ToolbarButton>
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleOrderedList().run()}
+          isActive={editor.isActive('orderedList')}
+          title="Numbered List"
+        >
+          1.
+        </ToolbarButton>
+      </div>
+
+      <div className={styles.toolbarDivider} />
+
+      <div className={styles.toolbarGroup}>
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleBlockquote().run()}
+          isActive={editor.isActive('blockquote')}
+          title="Quote"
+        >
+          "
+        </ToolbarButton>
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+          isActive={editor.isActive('codeBlock')}
+          title="Code Block"
+        >
+          {'</>'}
+        </ToolbarButton>
+      </div>
+    </div>
+  )
+}
+
 function NoteEditor() {
   const { selectedNote, updateNote, togglePin, deleteNote } = useNotes()
   const { toggleAIChat, isAIChatOpen } = useAI()
-  const [content, setContent] = useState('')
   const [title, setTitle] = useState('')
   const [isEditingTitle, setIsEditingTitle] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
-  const quillRef = useRef(null)
   const titleInputRef = useRef(null)
-
-  // Load selected note content and title
-  useEffect(() => {
-    if (selectedNote) {
-      setContent(selectedNote.content || '')
-      setTitle(selectedNote.title || 'Untitled')
-    } else {
-      setContent('')
-      setTitle('')
-    }
-  }, [selectedNote])
-
-  // Focus title input when editing
-  useEffect(() => {
-    if (isEditingTitle && titleInputRef.current) {
-      titleInputRef.current.focus()
-      titleInputRef.current.select()
-    }
-  }, [isEditingTitle])
 
   // Debounced save function
   const debouncedSave = useRef(
     debounce(async (noteId, newContent) => {
       if (!noteId) return
-
       setIsSaving(true)
       try {
         await updateNote(noteId, { content: newContent })
@@ -53,13 +151,46 @@ function NoteEditor() {
     }, APP_CONFIG.autoSaveDelay)
   ).current
 
-  // Handle content change
-  const handleChange = (value) => {
-    setContent(value)
-    if (selectedNote) {
-      debouncedSave(selectedNote.id, value)
+  // Initialize TipTap editor
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+      Underline,
+      Placeholder.configure({
+        placeholder: 'Start writing...',
+      }),
+    ],
+    content: '',
+    onUpdate: ({ editor }) => {
+      if (selectedNote) {
+        const html = editor.getHTML()
+        debouncedSave(selectedNote.id, html)
+      }
+    },
+  })
+
+  // Update editor content when selected note changes
+  useEffect(() => {
+    if (selectedNote && editor) {
+      // Only update if content is different to avoid cursor jumping
+      const currentContent = editor.getHTML()
+      if (currentContent !== selectedNote.content) {
+        editor.commands.setContent(selectedNote.content || '')
+      }
+      setTitle(selectedNote.title || 'Untitled')
+    } else if (editor) {
+      editor.commands.setContent('')
+      setTitle('')
     }
-  }
+  }, [selectedNote, editor])
+
+  // Focus title input when editing
+  useEffect(() => {
+    if (isEditingTitle && titleInputRef.current) {
+      titleInputRef.current.focus()
+      titleInputRef.current.select()
+    }
+  }, [isEditingTitle])
 
   // Handle pin toggle
   const handleTogglePin = async () => {
@@ -98,7 +229,6 @@ function NoteEditor() {
         setIsEditingTitle(false)
       }
     } else if (selectedNote && !title.trim()) {
-      // Revert to original title if empty
       setTitle(selectedNote.title)
       setIsEditingTitle(false)
     }
@@ -114,31 +244,6 @@ function NoteEditor() {
       setIsEditingTitle(false)
     }
   }
-
-  // Quill modules configuration
-  const modules = {
-    toolbar: [
-      [{ header: [1, 2, 3, false] }],
-      ['bold', 'italic', 'underline', 'strike'],
-      [{ list: 'ordered' }, { list: 'bullet' }],
-      ['blockquote', 'code-block'],
-      ['link'],
-      ['clean'],
-    ],
-  }
-
-  const formats = [
-    'header',
-    'bold',
-    'italic',
-    'underline',
-    'strike',
-    'list',
-    'bullet',
-    'blockquote',
-    'code-block',
-    'link',
-  ]
 
   if (!selectedNote) {
     return (
@@ -184,9 +289,7 @@ function NoteEditor() {
         </div>
         <div className={styles.actions}>
           <button
-            className={`${styles.actionBtn} ${
-              selectedNote.isPinned ? styles.pinned : ''
-            }`}
+            className={`${styles.actionBtn} ${selectedNote.isPinned ? styles.pinned : ''}`}
             onClick={handleTogglePin}
             title={selectedNote.isPinned ? 'Unpin note' : 'Pin note'}
           >
@@ -209,17 +312,10 @@ function NoteEditor() {
         </div>
       </div>
 
+      <EditorToolbar editor={editor} />
+
       <div className={styles.editorContent}>
-        <ReactQuill
-          ref={quillRef}
-          value={content}
-          onChange={handleChange}
-          modules={modules}
-          formats={formats}
-          theme="snow"
-          placeholder="Start writing..."
-          className={styles.quill}
-        />
+        <EditorContent editor={editor} className={styles.tiptap} />
       </div>
     </div>
   )

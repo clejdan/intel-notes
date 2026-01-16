@@ -2,7 +2,7 @@
 
 A note-taking app with AI chat. Think macOS Notes but with the ability to ask questions about your notes.
 
-Built with React, Vite, and Quill.js. Data stays in your browser via IndexedDB.
+Built with React 19, Vite, and TipTap. Data stays in your browser via IndexedDB.
 
 https://intel-notes.vercel.app
 
@@ -10,7 +10,7 @@ https://intel-notes.vercel.app
 
 **Notes** - Text editor with auto-save. Organize into folders, pin important ones, search across everything.
 
-**AI Chat** - Click the AI Chat icon to chat. The AI searches your notes for relevant context and answers questions about them. Currently uses OpenAI (bring your own API key).
+**AI Chat** - Click the robot icon to chat. The AI searches your notes using keyword matching and answers questions with OpenAI (bring your own API key).
 
 ## Keyboard shortcuts
 
@@ -28,13 +28,13 @@ src/
   utils/          # Helper functions
 ```
 
-## Tech
+## Stack
 
-- React 18
+- React 19
 - Vite
-- Quill.js (rich text)
-- Dexie (IndexedDB wrapper)
-- OpenAI API for chat
+- TipTap 
+- Dexie
+- OpenAI API required for AI chat (work in prog.)
 
 ## License
 
