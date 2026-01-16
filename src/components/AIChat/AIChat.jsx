@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useAI } from '../../context/AIContext'
+import { useNotes } from '../../context/NotesContext'
+import { formatTime } from '../../utils/dateFormat'
 import styles from './AIChat.module.css'
 
 function AIChat() {
@@ -21,18 +23,29 @@ function AIChat() {
 
   const [inputValue, setInputValue] = useState('')
   const [apiKeyInput, setApiKeyInput] = useState('')
+  const [copiedId, setCopiedId] = useState(null)
+  const [collapsedCitations, setCollapsedCitations] = useState({})
   const messagesEndRef = useRef(null)
-  const inputRef = useRef(null)
+  const textareaRef = useRef(null)
+
+  const { setSelectedNote } = useNotes()
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    if (messagesEndRef.current) {
+      // Safari-friendly scroll with fallback
+      try {
+        messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' })
+      } catch {
+        messagesEndRef.current.scrollIntoView(false)
+      }
+    }
   }, [messages, isLoading])
 
-  // Focus input when chat opens
+  // Focus textarea when chat opens
   useEffect(() => {
-    if (isAIChatOpen && inputRef.current) {
-      inputRef.current.focus()
+    if (isAIChatOpen && textareaRef.current) {
+      textareaRef.current.focus()
     }
   }, [isAIChatOpen])
 
@@ -41,6 +54,10 @@ function AIChat() {
     if (inputValue.trim() && !isLoading) {
       sendMessage(inputValue)
       setInputValue('')
+      // Reset textarea height
+      if (textareaRef.current) {
+        textareaRef.current.style.height = 'auto'
+      }
     }
   }
 
@@ -51,6 +68,70 @@ function AIChat() {
       setShowSettings(false)
     }
   }
+
+  const handleCopyMessage = async (content, messageId) => {
+    try {
+      // Use clipboard API with fallback for Safari
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(content)
+      } else {
+        // Fallback for Safari and non-HTTPS contexts
+        const textArea = document.createElement('textarea')
+        textArea.value = content
+        textArea.style.position = 'fixed'
+        textArea.style.left = '-9999px'
+        document.body.appendChild(textArea)
+        textArea.select()
+        document.execCommand('copy')
+        document.body.removeChild(textArea)
+      }
+      setCopiedId(messageId)
+      setTimeout(() => setCopiedId(null), 2000)
+    } catch (err) {
+      console.error('Failed to copy:', err)
+    }
+  }
+
+  const handleRegenerate = () => {
+    // Find the last user message and resend it
+    const lastUserMessage = [...messages].reverse().find((m) => m.role === 'user')
+    if (lastUserMessage) {
+      sendMessage(lastUserMessage.content)
+    }
+  }
+
+  const toggleCitationCollapse = (messageId) => {
+    setCollapsedCitations((prev) => ({
+      ...prev,
+      [messageId]: !prev[messageId],
+    }))
+  }
+
+  const handleCitationClick = (note) => {
+    if (note) {
+      setSelectedNote(note)
+    }
+  }
+
+  const handleTextareaInput = (e) => {
+    setInputValue(e.target.value)
+    // Auto-resize textarea
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto'
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 120)}px`
+    }
+  }
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleSubmit(e)
+    }
+  }
+
+  // Get last AI message for regenerate button
+  const lastAiMessageIndex = [...messages].reverse().findIndex((m) => m.role === 'assistant')
+  const lastAiMessageId = lastAiMessageIndex >= 0 ? messages[messages.length - 1 - lastAiMessageIndex]?.id : null
 
   if (!isAIChatOpen) {
     return null
@@ -163,68 +244,160 @@ function AIChat() {
       <div className={styles.messages}>
         {messages.length === 0 ? (
           <div className={styles.emptyState}>
-            <div className={styles.emptyIcon}>💬</div>
+            <div className={styles.emptyIconWrapper}>
+              <svg
+                className={styles.emptyIcon}
+                viewBox="0 0 64 64"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <rect x="8" y="12" width="48" height="40" rx="4" stroke="currentColor" strokeWidth="2" />
+                <circle cx="20" cy="28" r="3" fill="currentColor" />
+                <circle cx="32" cy="28" r="3" fill="currentColor" />
+                <circle cx="44" cy="28" r="3" fill="currentColor" />
+                <path d="M16 40h32" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            </div>
             <h4>Start a conversation</h4>
-            <p>Ask questions about your notes and I'll help find answers!</p>
+            <p>Ask questions about your notes and I'll help find relevant information.</p>
             <div className={styles.suggestions}>
               <p className={styles.suggestionsTitle}>Try asking:</p>
               <button
-                className={styles.suggestionBtn}
+                className={styles.suggestionCard}
                 onClick={() => setInputValue('What are my main topics?')}
               >
-                "What are my main topics?"
+                <span className={styles.suggestionIcon}>📋</span>
+                <span className={styles.suggestionText}>What are my main topics?</span>
               </button>
               <button
-                className={styles.suggestionBtn}
+                className={styles.suggestionCard}
                 onClick={() => setInputValue('Summarize my recent notes')}
               >
-                "Summarize my recent notes"
+                <span className={styles.suggestionIcon}>📝</span>
+                <span className={styles.suggestionText}>Summarize my recent notes</span>
               </button>
             </div>
           </div>
         ) : (
           <>
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`${styles.message} ${
-                  message.role === 'user' ? styles.userMessage : styles.aiMessage
-                }`}
-              >
-                <div className={styles.messageContent}>
-                  {message.content}
-                </div>
+            {messages.map((message) => {
+              const isUser = message.role === 'user'
+              const isLastAiMessage = message.id === lastAiMessageId
+              const hasCitations =
+                message.role === 'assistant' &&
+                message.relevantNotes &&
+                message.relevantNotes.length > 0
+              const citationsCollapsed = collapsedCitations[message.id]
 
-                {/* Show relevant notes for AI responses */}
-                {message.role === 'assistant' && message.relevantNotes && message.relevantNotes.length > 0 && (
-                  <div className={styles.citations}>
-                    <p className={styles.citationsTitle}>📎 Sources:</p>
-                    {message.relevantNotes.map((item, idx) => (
-                      <div key={idx} className={styles.citation}>
-                        <span className={styles.citationTitle}>
-                          {item.note.title}
-                        </span>
-                        <span className={styles.citationScore}>
-                          {(item.score * 100).toFixed(0)}% match
-                        </span>
-                      </div>
-                    ))}
+              return (
+                <div
+                  key={message.id}
+                  className={`${styles.messageWrapper} ${isUser ? styles.userWrapper : styles.aiWrapper}`}
+                >
+                  <div className={styles.avatar}>
+                    {isUser ? '👤' : '🤖'}
                   </div>
-                )}
-              </div>
-            ))}
+                  <div className={styles.messageBody}>
+                    <div
+                      className={`${styles.messageBubble} ${
+                        isUser ? styles.userBubble : styles.aiBubble
+                      }`}
+                    >
+                      <div className={styles.messageContent}>{message.content}</div>
+
+                      {/* Message actions for AI messages */}
+                      {!isUser && (
+                        <div className={styles.messageActions}>
+                          <button
+                            className={styles.actionBtn}
+                            onClick={() => handleCopyMessage(message.content, message.id)}
+                            title="Copy message"
+                          >
+                            {copiedId === message.id ? '✓' : '📋'}
+                          </button>
+                          {isLastAiMessage && !isLoading && (
+                            <button
+                              className={styles.actionBtn}
+                              onClick={handleRegenerate}
+                              title="Regenerate response"
+                            >
+                              ↻
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Timestamp */}
+                    <span className={styles.timestamp}>
+                      {formatTime(message.timestamp)}
+                    </span>
+
+                    {/* Citations section */}
+                    {hasCitations && (
+                      <div className={styles.citations}>
+                        <button
+                          className={styles.citationsHeader}
+                          onClick={() => toggleCitationCollapse(message.id)}
+                        >
+                          <span className={styles.citationsTitle}>
+                            📎 {message.relevantNotes.length} source
+                            {message.relevantNotes.length > 1 ? 's' : ''}
+                          </span>
+                          <span
+                            className={`${styles.citationsChevron} ${
+                              citationsCollapsed ? styles.collapsed : ''
+                            }`}
+                          >
+                            ▼
+                          </span>
+                        </button>
+                        {!citationsCollapsed && (
+                          <div className={styles.citationsList}>
+                            {message.relevantNotes.map((item, idx) => (
+                              <button
+                                key={idx}
+                                className={styles.citation}
+                                onClick={() => handleCitationClick(item.note)}
+                                title="Click to view note"
+                              >
+                                <span className={styles.citationTitle}>
+                                  {item.note.title}
+                                </span>
+                                <div className={styles.citationScoreWrapper}>
+                                  <div
+                                    className={styles.citationScoreBar}
+                                    style={{ width: `${item.score * 100}%` }}
+                                  />
+                                  <span className={styles.citationScore}>
+                                    {(item.score * 100).toFixed(0)}%
+                                  </span>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
 
             {isLoading && (
-              <div className={`${styles.message} ${styles.aiMessage}`}>
-                <div className={styles.messageContent}>
-                  <div className={styles.loadingDots}>
-                    <span></span>
-                    <span></span>
-                    <span></span>
+              <div className={`${styles.messageWrapper} ${styles.aiWrapper}`}>
+                <div className={styles.avatar}>🤖</div>
+                <div className={styles.messageBody}>
+                  <div className={`${styles.messageBubble} ${styles.aiBubble}`}>
+                    <div className={styles.typingIndicator}>
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                    </div>
+                    {loadingMessage && (
+                      <span className={styles.loadingText}>{loadingMessage}</span>
+                    )}
                   </div>
-                  {loadingMessage && (
-                    <span className={styles.loadingText}>{loadingMessage}</span>
-                  )}
                 </div>
               </div>
             )}
@@ -236,21 +409,37 @@ function AIChat() {
 
       {/* Input area */}
       <form onSubmit={handleSubmit} className={styles.inputForm}>
-        <input
-          ref={inputRef}
-          type="text"
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          placeholder="Ask a question about your notes..."
-          className={styles.input}
-          disabled={isLoading}
-        />
+        <div className={styles.inputWrapper}>
+          <textarea
+            ref={textareaRef}
+            value={inputValue}
+            onChange={handleTextareaInput}
+            onKeyDown={handleKeyDown}
+            placeholder="Ask a question about your notes..."
+            className={styles.textarea}
+            disabled={isLoading}
+            rows={1}
+          />
+          <span className={styles.inputHint}>Enter to send</span>
+        </div>
         <button
           type="submit"
           className={styles.sendBtn}
           disabled={!inputValue.trim() || isLoading}
         >
-          ➤
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
         </button>
       </form>
     </div>

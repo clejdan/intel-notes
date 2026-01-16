@@ -45,4 +45,14 @@ export function formatFullDate(timestamp) {
   return date.toLocaleDateString('en-US', options)
 }
 
+// Format timestamp to short time for chat messages (e.g., "2:30 PM")
+export function formatTime(timestamp) {
+  const date = new Date(timestamp)
+  return date.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  })
+}
+
 export default formatDate

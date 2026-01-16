@@ -22,12 +22,13 @@
   border-radius: var(--radius-md);
   color: var(--text-primary);
   font-size: var(--font-size-sm);
-  transition: border-color var(--transition-fast);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .searchInput:focus {
   outline: none;
   border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(74, 158, 255, 0.15);
 }
 
 .searchInput::placeholder {
@@ -82,16 +83,19 @@
   padding: var(--spacing-md);
   border-bottom: 1px solid var(--border-color);
   cursor: pointer;
-  transition: background-color var(--transition-fast);
+  transition: all var(--transition-fast);
+  border-left: 3px solid transparent;
 }
 
 .noteItem:hover {
   background-color: var(--bg-hover);
+  border-left-color: var(--border-light);
 }
 
 .noteItem.selected {
   background-color: var(--bg-tertiary);
-  border-left: 3px solid var(--accent);
+  border-left-color: var(--accent);
+  box-shadow: inset 0 0 0 1px rgba(74, 158, 255, 0.1);
 }
 
 .noteHeader {
