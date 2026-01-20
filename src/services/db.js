@@ -18,34 +18,27 @@ class IntelNotesDB extends Dexie {
     this.notes = this.table('notes')
     this.folders = this.table('folders')
     this.embeddings = this.table('embeddings')
+
+    // Only runs when database is first created (not on every open)
+    this.on('populate', async () => {
+      console.log('Populating database with default data...')
+      await this.folders.bulkAdd(defaultFolders)
+      await this.notes.add(welcomeNote)
+    })
   }
 }
 
 // Create database instance
 const db = new IntelNotesDB()
 
-// Initialize database with default data on first run
+// Open database connection
 export async function initializeDatabase() {
   try {
-    // Check if database is already initialized
-    const folderCount = await db.folders.count()
-    const noteCount = await db.notes.count()
-
-    // If empty, add default data
-    if (folderCount === 0) {
-      console.log('Initializing database with default folders...')
-      await db.folders.bulkAdd(defaultFolders)
-    }
-
-    if (noteCount === 0) {
-      console.log('Initializing database with welcome note...')
-      await db.notes.add(welcomeNote)
-    }
-
-    console.log('Database initialized successfully')
+    await db.open()
+    console.log('Database opened successfully')
     return true
   } catch (error) {
-    console.error('Error initializing database:', error)
+    console.error('Error opening database:', error)
     return false
   }
 }
