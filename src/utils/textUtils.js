@@ -1,8 +1,8 @@
-// Strip HTML tags from text
+// Strip HTML tags from text (uses DOMParser for safety - doesn't execute scripts)
 export function stripHtml(html) {
-  const tmp = document.createElement('DIV')
-  tmp.innerHTML = html
-  return tmp.textContent || tmp.innerText || ''
+  if (!html) return ''
+  const doc = new DOMParser().parseFromString(html, 'text/html')
+  return doc.body.textContent || ''
 }
 
 // Truncate text to specified length

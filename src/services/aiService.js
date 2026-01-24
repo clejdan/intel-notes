@@ -1,21 +1,21 @@
 import { queryWithRAG } from './ragService'
 
-// OpenAI API key (loaded from localStorage)
+// OpenAI API key stored in sessionStorage (cleared when browser closes for security)
 let openaiApiKey = null
 
 // Set OpenAI API key
 export function setOpenAIKey(key) {
   openaiApiKey = key
   if (key) {
-    localStorage.setItem('openai_api_key', key)
+    sessionStorage.setItem('openai_api_key', key)
   } else {
-    localStorage.removeItem('openai_api_key')
+    sessionStorage.removeItem('openai_api_key')
   }
 }
 
-// Load OpenAI API key from localStorage
+// Load OpenAI API key from sessionStorage
 export function loadOpenAIKey() {
-  const key = localStorage.getItem('openai_api_key')
+  const key = sessionStorage.getItem('openai_api_key')
   if (key) {
     openaiApiKey = key
     return true
